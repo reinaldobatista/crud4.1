@@ -86,6 +86,12 @@ require 'C:\wamp64\crud4\resources\views\ajax\formatado_numerico\formata_inteiro
                       <p>Deposito</p>
                     </a>
                   </li>
+                  <li class="nav-item">
+                    <a href="{{url('/solicitacoes/envio/index')}}" class="nav-link">
+                      <i class="fas fa-truck-loading"></i>
+                      <p>Solicitações de Envio</p>
+                    </a>
+                  </li>
                 </ul>
               </li>
               <li class="nav-item has-treeview">

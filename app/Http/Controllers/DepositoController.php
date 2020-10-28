@@ -108,6 +108,24 @@ class DepositoController extends Controller
         $status=$this->objStatusPedidoVenda->all();
         $pedidoVendas=$this->objPedidovenda->all();
         $solicitacao_pedido_venda= $this->objSolicitaca_pedido_venda->all();
+        $pedido=$this->repositorypedidoVenda->find($id);
+        $pedido=$pedido->getattributes();
+        if( $pedido['status_pedido_venda_id']==1)
+        {
+            return redirect()->back()->with( 'error', 'Pedido de venda ainda Não foi pago!' ); 
+        }
+        if( $pedido['status_pedido_venda_id']==6)
+        {
+            return redirect()->back()->with( 'error', 'Ja foi feito o envio desse pedido!' ); 
+        }
+        if( $pedido['status_pedido_venda_id']==4)
+        {
+            return redirect()->back()->with( 'error', 'Pedido de venda Cancelado!' ); 
+        }
+        if( $pedido['status_pedido_venda_id']==5)
+        {
+            return redirect()->back()->with( 'error', 'Pedido de venda ja foi finalizado!' ); 
+        }
         return view('ajax.pedidoVenda.envio_pedido_venda.EnviaVendasOnline', [
             'pedidoVendas'=>$pedidoVendas,
             'storys'=>$storys,

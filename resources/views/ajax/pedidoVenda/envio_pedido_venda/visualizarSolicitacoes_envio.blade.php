@@ -65,8 +65,8 @@
                 </li>
               </ul>
             </li>
-            <li class="nav-item has-treeview">
-              <a href="#" class="nav-link">
+            <li class="nav-item has-treeview menu-open">
+              <a href="#" class="nav-link active">
                 <i class="fas fa-box"></i>
                 <p>
                   Estoque
@@ -84,6 +84,12 @@
                   <a href="{{url('/deposito/index')}}" class="nav-link">
                     <i class="fas fa-boxes"></i>
                     <p>Deposito</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="{{url('/solicitacoes/envio/index')}}" class="nav-link active">
+                    <i class="fas fa-truck-loading"></i>
+                    <p>Solicitações de Envio</p>
                   </a>
                 </li>
               </ul>
@@ -105,8 +111,8 @@
                 </li>
               </ul>
             </li>
-            <li class="nav-item has-treeview menu-open">
-              <a href="#" class="nav-link active">
+            <li class="nav-item has-treeview">
+              <a href="#" class="nav-link">
                 <i class="fas fa-shopping-cart"></i>
                 <p>
                   Comercial
@@ -115,7 +121,7 @@
               </a>
               <ul class="nav nav-treeview ">
                 <li class="nav-item">
-                  <a href="{{url('/vendasonline/index')}}" class="nav-link active">
+                  <a href="{{url('/vendasonline/index')}}" class="nav-link">
                     <i class="fas fa-globe-americas"></i>
                     <p>Vendas online</p>
                   </a>
@@ -274,7 +280,7 @@
                               <td>{{$status->name}}</td>
                               <td>
                                 <a >
-                                  <button type="submit" class="btn btn-warning" data-toggle="modal" data-target="#detalhes{{$numberPedido}}">
+                                  <button type="submit" class="btn btn-warning" data-toggle="modal" data-target="#detalhes"  data-id="{{$Pedido->numberPedido}}" data-nome="">
                                     <i class="far fa-eye"></i>
                                   </button>
                                 </a>
@@ -287,9 +293,44 @@
                               @endif
                             </tr>
                             @endforeach
-                           
                           </tbody>
                       </table>
+                      <div class="modal fade" id="detalhes" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg m-auto">
+                          <div class="modal-content">
+                            <div class="modal-header bg-primary">
+                              <input type="text" id="id" value="" name="id" hidden>
+                              @php
+                                  $id=0;
+                              @endphp
+                              <input class="modal-title" id="exampleModalLabel" value="" style="background: none;border:none"> 
+                              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                              </button>
+                            </div>
+                            <div class="modal-body bg-ligth">
+                                <table class="table table-bordered" id="table-detalhe">
+                                  <thead class="thead-white">
+                                    <tr>
+                                      <th scope="col">Imagem</th>
+                                      <th scope="col">Produto</th>
+                                      <th scope="col">preço</th>
+                                      <th scope="col">Qtd</th>
+                                      <th scope="col">subtotal</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+
+                                  </tbody>
+                                </table>
+                              </div>
+                              <div class="modal-footer ">
+                                <button type="button" class="btn btn-primary" data-dismiss="modal">Sair</button>
+                              </div>
+                            </div>
+                          </div>
+                           
+                      </div>   
                     </div>
                   </div>
                 </div>                                                             
@@ -305,6 +346,7 @@
   </div>
 @endsection
 @section('script')
+
 <script>
   $(function () {
     $("#example").DataTable({

@@ -135,6 +135,19 @@ class PedidoVendaController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
+    public function returnteste($data)
+    {
+        $total=0;
+        $pedidos= $this->objPedidovenda->where('numberPedido',$data[0])->get();
+        $pedidos=$pedidos->all();
+        foreach ($pedidos as $key => $item) {
+            $products[]=$this->objProduct->where('id',$item->products_id)->get()->all();
+            $total=$item->value*$item->qtd+$total;
+        }
+        $result=[$pedidos,$products,$total];
+        return response()->json($result);
+
+    }
     public function edit($number)
     {
         $user=$this->objUser->all();
@@ -225,189 +238,274 @@ class PedidoVendaController extends Controller
      */
     public function update(Request $request, $id)
     {
-
         $request=$request->all();
         $solicitacaoProdutos=$this->objSolicitacaoProduto->all();
-        $qtdstory=0; $qtdQtd=0; $qtdproduct=0;
-        $ok=0; $okstory=0; $okproduc=0; $okQtd=0; $qtdver=0; $ultimostory=0;
-        $depositos=  $this->repositorydeposito->all();
         $requestnames=$request['products_id'];
         $requeststorys=$request['story_id'];
         $requestqtds=$request['qtd'];
+        $qtd=0;$contloop=0;
         $requestpedidoids=$request['pedido_venda_id'];
+        $count=count($requeststorys);
+        for ($i=0; $i < $count; $i++) { 
+           $confere=$this->objDeposito->where('story_id',$requeststorys[$i])->where('products_id',$requestnames[$i])->get();
+            if($confere->count()==0)
+            {
+                $product=$this->objProduct->find($requestnames[$i]);
+                return redirect()->back()->with( 'error', "O produto $product->name não existe no estoque!");
+            }
+           foreach ($confere as $key => $item) {
+            $depositoid=$item->id;
+            $qtd=$item->qtd+$qtd;
+            }
+            $depositoids[]= $depositoid;
+            if($qtd<$requestqtds[$i])
+            {
+                $product=$this->objProduct->find($requestnames[$i]);
+                return redirect()->back()->with( 'error', "O produto  $product->name não tem quantidade disponivel no estoque!" );
+            }
+        }
+        foreach ($depositoids as $key => $depositoId) {
+            if($depositoId=$this->repositorydeposito->find($depositoId))
+            {
+                $depositoi=$depositoId->getattributes();
+                $data=[
+                    'qtd'=>$depositoi['qtd']-$requestqtds[$contloop],
+                    ];
+                date_default_timezone_set('America/Sao_Paulo');
+                $data_atual=date('Y-m-d');
+                $dataSolicitacao=[
+                    'story_id'=> $depositoi['story_id'],
+                    'product_id'=> $depositoi['products_id'],
+                    'qtd'=>$requestqtds[$contloop],
+                    'pedido_id'=> $requestpedidoids[0],
+                    'data_saida'=> $data_atual,
+                    ];    
+                $this->repositorySolicitacao_pedido_venda->create($dataSolicitacao);
+                $depositoId->update($data);
+                $contloop++;
+            }
+        }
         foreach ($requestpedidoids as $key => $requestpedidoid) {
-            $requestpedidoid=$this->repositorypedidoVenda->find($requestpedidoid);
-            $requestpedidoi=$requestpedidoid->getattributes();
-            if( $requestpedidoi['status_pedido_venda_id']==1)
+            if($requestpedidoid=$this->repositorypedidoVenda->find($requestpedidoid))
             {
-                return redirect()->back()->with( 'error', 'Pedido de venda ainda Não foi pago!' ); 
+                $requestpedidoi=$requestpedidoid->getattributes();
+                date_default_timezone_set('America/Sao_Paulo');
+                $data_atual=date('Y-m-d');
+                $data=[
+                    "status_pedido_venda_id" => 3,
+                    "solicitacao_envio" =>$data_atual,
+                    ];
+                    $requestpedidoid->update($data);
             }
-            if( $requestpedidoi['status_pedido_venda_id']==3)
-            {
-                return redirect()->back()->with( 'error', 'Ja foi feita requisição desse pedido para o deposito!' ); 
-            }
-            if( $requestpedidoi['status_pedido_venda_id']==4)
-            {
-                return redirect()->back()->with( 'error', 'Pedido de venda Cancelado!' ); 
-            }
-            if( $requestpedidoi['status_pedido_venda_id']==5)
-            {
-                return redirect()->back()->with( 'error', 'Pedido de venda ja foi finalizado!' ); 
-            }
-            if($requestpedidoi['status_pedido_venda_id']==2)
-            {
-                $ok=1;
-            }
-            
-        }
-        if($ok==1)
-        {
-            foreach ($requeststorys as $key => $requeststory) {
-                if($ultimostory==$requeststory)
+            foreach ($solicitacaoProdutos as $key => $solicitacaoProduto) {
+                if($solicitacaoProduto->pedido_id ==$requestpedidoid->id  )
                 {
-    
-                }
-                else
-                {
-                    $qtdstory=$qtdstory+1;
-                    $ultimostory=$requeststory;
-                }
-                   
-            }
-            $ultimostory=0;
-            foreach ($requestqtds as $key => $requestqtd) {
-                    $qtdQtd=$qtdQtd+1;
-                    $qtdQ[]=$requestqtd;
-            }
-            foreach ($requestnames as $key => $requestname) {
-                $qtdproduct=$qtdproduct+1;
-                $products[]=$requestname;
-            }
-    
-            foreach ($depositos as $key => $deposito) {
-                $deposito=$deposito->getattributes();
-               foreach ($requeststorys as $key => $requeststory) {
-                    if($requeststory==$deposito['story_id'])
-                    {
-                            foreach ($products as $key => $product) {
-                                if($product==$deposito['products_id'])
-                                {
-                                    $okstory++;
-                                    $depositoids[]=$deposito['id'];
-                                }
-                               }
-                       
-                    }
-                   
-               }
-            }
-            foreach ($depositoids as $key => $depositoid) {
-               if($depositoid==$ultimostory)
-               {
-                    
-               }
-               else
-               {
-                   $depositoIds[]=$depositoid;
-                   $ultimostory=$depositoid;
-               }
-            }
-            if($okstory>=$qtdstory)
-            {
-                foreach ($depositoIds as $key => $depositoId) {
-                    if($depositoId=$this->repositorydeposito->find($depositoId))
-                    {   
-                        $depositoid=$depositoId->getattributes();
-                        foreach ($requestnames as $key => $requestname) {
-                            if($depositoid['products_id']==$requestname)
-                            {
-                                $okproduc=$okproduc+1;
-                            }
-                        }
-                     
-                    }
-                }
-            } 
-            else
-            {
-                return redirect()->back()->with( 'error', 'Não existe nenhum produto nesse deposito!' ); 
-            }
-            if($okproduc>=$qtdproduct)
-            {
-                foreach ($requestqtds as $key => $requestqtd) {
-                    if($qtdQ[$qtdver]>=$requestqtd)
-                    {
-                        $okQtd++;
-                    }
-                    $qtdver=$qtdver+1;
-                }
-                $qtdver=0;
-            }
-            else
-            {
-                return redirect()->back()->with( 'error', 'Não existe esté produto nesse deposito!' ); 
-            }
-            if($okQtd>=$qtdQtd)
-            {
-                foreach ($depositoIds as $key => $depositoId) {
-                    if($depositoId=$this->repositorydeposito->find($depositoId))
-                    {
-                        $depositoi=$depositoId->getattributes();
-                        $data=[
-                            'story_id'=> $depositoi['story_id'],
-                            'products_id'=> $depositoi['products_id'],
-                            'qtd'=>$depositoi['qtd']-$qtdQ[$qtdver],
-                            'category_id'=> $depositoi['category_id'],
-                            ];
-                        date_default_timezone_set('America/Sao_Paulo');
-                        $data_atual=date('Y-m-d');
-                        $dataSolicitacao=[
-                            'story_id'=> $depositoi['story_id'],
-                            'product_id'=> $depositoi['products_id'],
-                            'qtd'=>$qtdQ[$qtdver],
-                            'pedido_id'=> $requestpedidoids[0],
-                            'data_saida'=> $data_atual,
-                            ];    
-                        $this->repositorySolicitacao_pedido_venda->create($dataSolicitacao);
-                        $depositoId->update($data);
-                        $qtdver=$qtdver+1;
-                    }
-                }
-                foreach ($requestpedidoids as $key => $requestpedidoid) {
-                    if($requestpedidoid=$this->repositorypedidoVenda->find($requestpedidoid))
-                    {
-                        $requestpedidoi=$requestpedidoid->getattributes();
-                        date_default_timezone_set('America/Sao_Paulo');
-                        $data_atual=date('Y-m-d');
-                        $data=[
-                            "products_id" => $requestpedidoi['products_id'],
-                            "numberPedido" => $requestpedidoi['numberPedido'],
-                            "status_carrinho_id" =>$requestpedidoi['status_carrinho_id'],
-                            "qtd" => $requestpedidoi['qtd'],
-                            "value" => $requestpedidoi['value'],
-                            "user_id" =>$requestpedidoi['user_id'],
-                            "status_pedido_venda_id" => 3,
-                            "solicitacao_envio" =>$data_atual,
-                            ];
-                            $requestpedidoid->update($data);
-                    }
-                    foreach ($solicitacaoProdutos as $key => $solicitacaoProduto) {
-                        if($solicitacaoProduto->pedido_id ==$requestpedidoid->id  )
-                        {
-                            $solicitacaoProduto->delete();
-                        }
-                    }
+                    $solicitacaoProduto->delete();
                 }
             }
-            else
-            {
-                return redirect()->back()->with( 'error', 'Alguns desses produtos nao tem quantidade disponivel
-                 no estoque verifique os produtos no deposito!' ); 
-            }
-            return redirect(route('index.vendasonline'))->with( 'success', 'Pedido pronto para envio' );
         }
-        
+        return redirect(route('index.vendasonline'))->with( 'success', 'Pedido pronto para envio' );
     }
+    // public function update(Request $request, $id)
+    // {
+
+    //     $request=$request->all();
+    //     $solicitacaoProdutos=$this->objSolicitacaoProduto->all();
+    //     $qtd=0;$qtdstory=0;$qtdQtd=0;$qtdproduct=0;
+    //     $ok=0; $okstory=0; $okproduc=0; $okQtd=0; $qtdver=0; $ultimostory=0;
+    //     $depositos=  $this->repositorydeposito->all();
+    //     $requestnames=$request['products_id'];
+    //     $requeststorys=$request['story_id'];
+    //     $requestqtds=$request['qtd'];
+    //     $requestpedidoids=$request['pedido_venda_id'];
+    //     $count=count($requeststorys);
+    //     for ($i=0; $i < $count; $i++) { 
+    //         $confere=$this->objDeposito->where('story_id',$requeststorys[$i])->where('products_id',$requestnames[$i])->get();
+    //         if($confere->count()==0)
+    //         {
+    //             return redirect()->back()->with( 'error', 'Não existe esté produto no estoque!' );
+    //         }
+    //         foreach ($confere as $key => $item) {
+    //             $qtd=$item->qtd+$qtd;
+    //         }
+    //         if($qtd<$requestqtds[$i])
+    //         {
+    //             return redirect()->back()->with( 'error', 'Algum dos produtos não tem quantidade disponivel no estoque!' );
+    //         }
+    //      }
+    //     foreach ($requestpedidoids as $key => $requestpedidoid) {
+    //         $requestpedidoid=$this->repositorypedidoVenda->find($requestpedidoid);
+    //         $requestpedidoi=$requestpedidoid->getattributes();
+    //         if( $requestpedidoi['status_pedido_venda_id']==1)
+    //         {
+    //             return redirect()->back()->with( 'error', 'Pedido de venda ainda Não foi pago!' ); 
+    //         }
+    //         if( $requestpedidoi['status_pedido_venda_id']==3)
+    //         {
+    //             return redirect()->back()->with( 'error', 'Ja foi feita requisição desse pedido para o deposito!' ); 
+    //         }
+    //         if( $requestpedidoi['status_pedido_venda_id']==4)
+    //         {
+    //             return redirect()->back()->with( 'error', 'Pedido de venda Cancelado!' ); 
+    //         }
+    //         if( $requestpedidoi['status_pedido_venda_id']==5)
+    //         {
+    //             return redirect()->back()->with( 'error', 'Pedido de venda ja foi finalizado!' ); 
+    //         }
+    //         if($requestpedidoi['status_pedido_venda_id']==2)
+    //         {
+    //             $ok=1;
+    //         }
+            
+    //     }
+    //     if($ok==1)
+    //     {
+    //         foreach ($requeststorys as $key => $requeststory) {
+    //             if($ultimostory==$requeststory)
+    //             {
+    
+    //             }
+    //             else
+    //             {
+    //                 $qtdstory=$qtdstory+1;
+    //                 $ultimostory=$requeststory;
+    //             }
+                   
+    //         }
+    //         $ultimostory=0;
+    //         foreach ($requestqtds as $key => $requestqtd) {
+    //                 $qtdQtd=$qtdQtd+1;
+    //                 $qtdQ[]=$requestqtd;
+    //         }
+    //         foreach ($requestnames as $key => $requestname) {
+    //             $qtdproduct=$qtdproduct+1;
+    //             $products[]=$requestname;
+    //         }
+    
+    //         foreach ($depositos as $key => $deposito) {
+    //             $deposito=$deposito->getattributes();
+    //            foreach ($requeststorys as $key => $requeststory) {
+    //                 if($requeststory==$deposito['story_id'])
+    //                 {
+    //                         foreach ($products as $key => $product) {
+    //                             if($product==$deposito['products_id'])
+    //                             {
+    //                                 $okstory++;
+    //                                 $depositoids[]=$deposito['id'];
+    //                             }
+    //                            }
+                       
+    //                 }
+                   
+    //            }
+    //         }
+    //         foreach ($depositoids as $key => $depositoid) {
+    //            if($depositoid==$ultimostory)
+    //            {
+                    
+    //            }
+    //            else
+    //            {
+    //                $depositoIds[]=$depositoid;
+    //                $ultimostory=$depositoid;
+    //            }
+    //         }
+    //         if($okstory>=$qtdstory)
+    //         {
+    //             foreach ($depositoIds as $key => $depositoId) {
+    //                 if($depositoId=$this->repositorydeposito->find($depositoId))
+    //                 {   
+    //                     $depositoid=$depositoId->getattributes();
+    //                     foreach ($requestnames as $key => $requestname) {
+    //                         if($depositoid['products_id']==$requestname)
+    //                         {
+    //                             $okproduc=$okproduc+1;
+    //                         }
+    //                     }
+                     
+    //                 }
+    //             }
+    //         } 
+    //         else
+    //         {
+    //             return redirect()->back()->with( 'error', 'Não existe nenhum produto nesse deposito!' ); 
+    //         }
+    //         if($okproduc>=$qtdproduct)
+    //         {
+    //             foreach ($requestqtds as $key => $requestqtd) {
+    //                 if($qtdQ[$qtdver]>=$requestqtd)
+    //                 {
+    //                     $okQtd++;
+    //                 }
+    //                 $qtdver=$qtdver+1;
+    //             }
+    //             $qtdver=0;
+    //         }
+    //         else
+    //         {
+    //             return redirect()->back()->with( 'error', 'Não existe esté produto nesse deposito!' ); 
+    //         }
+    //         if($okQtd>=$qtdQtd)
+    //         {
+    //             foreach ($depositoIds as $key => $depositoId) {
+    //                 if($depositoId=$this->repositorydeposito->find($depositoId))
+    //                 {
+    //                     $depositoi=$depositoId->getattributes();
+    //                     $data=[
+    //                         'story_id'=> $depositoi['story_id'],
+    //                         'products_id'=> $depositoi['products_id'],
+    //                         'qtd'=>$depositoi['qtd']-$qtdQ[$qtdver],
+    //                         'category_id'=> $depositoi['category_id'],
+    //                         ];
+    //                     date_default_timezone_set('America/Sao_Paulo');
+    //                     $data_atual=date('Y-m-d');
+    //                     $dataSolicitacao=[
+    //                         'story_id'=> $depositoi['story_id'],
+    //                         'product_id'=> $depositoi['products_id'],
+    //                         'qtd'=>$qtdQ[$qtdver],
+    //                         'pedido_id'=> $requestpedidoids[0],
+    //                         'data_saida'=> $data_atual,
+    //                         ];    
+    //                     $this->repositorySolicitacao_pedido_venda->create($dataSolicitacao);
+    //                     $depositoId->update($data);
+    //                     $qtdver=$qtdver+1;
+    //                 }
+    //             }
+    //             foreach ($requestpedidoids as $key => $requestpedidoid) {
+    //                 if($requestpedidoid=$this->repositorypedidoVenda->find($requestpedidoid))
+    //                 {
+    //                     $requestpedidoi=$requestpedidoid->getattributes();
+    //                     date_default_timezone_set('America/Sao_Paulo');
+    //                     $data_atual=date('Y-m-d');
+    //                     $data=[
+    //                         "products_id" => $requestpedidoi['products_id'],
+    //                         "numberPedido" => $requestpedidoi['numberPedido'],
+    //                         "status_carrinho_id" =>$requestpedidoi['status_carrinho_id'],
+    //                         "qtd" => $requestpedidoi['qtd'],
+    //                         "value" => $requestpedidoi['value'],
+    //                         "user_id" =>$requestpedidoi['user_id'],
+    //                         "status_pedido_venda_id" => 3,
+    //                         "solicitacao_envio" =>$data_atual,
+    //                         ];
+    //                         $requestpedidoid->update($data);
+    //                 }
+    //                 foreach ($solicitacaoProdutos as $key => $solicitacaoProduto) {
+    //                     if($solicitacaoProduto->pedido_id ==$requestpedidoid->id  )
+    //                     {
+    //                         $solicitacaoProduto->delete();
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //         else
+    //         {
+    //             return redirect()->back()->with( 'error', 'Alguns desses produtos nao tem quantidade disponivel
+    //              no estoque verifique os produtos no deposito!' ); 
+    //         }
+    //         return redirect(route('index.vendasonline'))->with( 'success', 'Pedido pronto para envio' );
+    //     }
+        
+    // }
     public function updateFinish(Request $request, $id)
     {
 

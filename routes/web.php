@@ -148,5 +148,9 @@ Route::get('/shows/{id},{selectcategorys}','PaginaUsuarioController@Showfilter')
 Route::get('/teste','PaginaUsuarioController@teste')->name('products.teste');
 
 
+// 
+Route::get('/return/{data}','PedidoVendaController@returnteste')->name('returnteste.show');
+
+
 
 

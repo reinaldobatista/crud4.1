@@ -78,9 +78,15 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a href="{{url('/deposito/index')}}" class="nav-link">
+                    <a href="{{url('/solicitacoes/envio/index')}}" class="nav-link">
                       <i class="fas fa-boxes"></i>
                       <p>Deposito</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{{url('/deposito/index')}}" class="nav-link">
+                      <i class="fas fa-truck-loading"></i>
+                      <p>Solicitações de Envio</p>
                     </a>
                   </li>
                 </ul>

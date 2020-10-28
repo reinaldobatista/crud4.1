@@ -65,8 +65,8 @@
                 </li>
               </ul>
             </li>
-            <li class="nav-item has-treeview">
-              <a href="#" class="nav-link">
+            <li class="nav-item has-treeview menu-open">
+              <a href="#" class="nav-link active">
                 <i class="fas fa-box"></i>
                 <p>
                   Estoque
@@ -84,6 +84,12 @@
                   <a href="{{url('/deposito/index')}}" class="nav-link">
                     <i class="fas fa-boxes"></i>
                     <p>Deposito</p>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="{{url('/solicitacoes/envio/index')}}" class="nav-link active">
+                    <i class="fas fa-truck-loading"></i>
+                    <p>Solicitações de Envio</p>
                   </a>
                 </li>
               </ul>
@@ -105,8 +111,8 @@
                 </li>
               </ul>
             </li>
-            <li class="nav-item has-treeview menu-open">
-              <a href="#" class="nav-link active">
+            <li class="nav-item has-treeview">
+              <a href="#" class="nav-link">
                 <i class="fas fa-shopping-cart"></i>
                 <p>
                   Comercial
@@ -115,7 +121,7 @@
               </a>
               <ul class="nav nav-treeview ">
                 <li class="nav-item">
-                  <a href="{{url('/vendasonline/index')}}" class="nav-link acctive">
+                  <a href="{{url('/vendasonline/index')}}" class="nav-link">
                     <i class="fas fa-globe-americas"></i>
                     <p>Vendas online</p>
                   </a>
